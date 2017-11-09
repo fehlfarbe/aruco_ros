@@ -61,6 +61,8 @@ private:
   std::string camera_frame_;
   std::string reference_frame_;
   double marker_size_;
+  std::string refinementMethod;
+
 
   // ROS pub-sub
   ros::NodeHandle nh_;
@@ -96,9 +98,28 @@ public:
       nh_.param<bool>("image_is_rectified", useRectifiedImages_, true);
       nh_.param<std::string>("reference_frame", reference_frame_, "");
       nh_.param<std::string>("camera_frame", camera_frame_, "");
+      nh_.param<std::string>("corner_refinement", refinementMethod, "LINES");
+
       ROS_ASSERT(not camera_frame_.empty());
       if(reference_frame_.empty())
         reference_frame_ = camera_frame_;
+
+      if ( refinementMethod == "SUBPIX" )
+          mDetector_.setCornerRefinementMethod(aruco::MarkerDetector::SUBPIX);
+      else if ( refinementMethod == "HARRIS" )
+          mDetector_.setCornerRefinementMethod(aruco::MarkerDetector::HARRIS);
+      else if ( refinementMethod == "NONE" )
+          mDetector_.setCornerRefinementMethod(aruco::MarkerDetector::NONE);
+      else
+          mDetector_.setCornerRefinementMethod(aruco::MarkerDetector::LINES);
+      ROS_INFO_STREAM("Corner refinement method: " << mDetector_.getCornerRefinementMethod());
+
+      float mins, maxs;
+      mDetector_.getMinMaxSize(mins, maxs);
+      nh_.param<float>("marker_min", mins, mins);
+      nh_.param<float>("marker_max", maxs, maxs);
+      mDetector_.setMinMaxSize(mins, maxs);
+      ROS_INFO_STREAM("Marker size min: " << mins << "  max: " << maxs);
     }
     else
     {
